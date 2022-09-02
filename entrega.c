@@ -3,6 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct prenda_t{
+    size_t numero;
+    size_t tiempo;
+    size_t lavado;
+    struct prenda_t * siguiente;
+};
+
+struct lavanderia_t{
+    int ** matriz_incompatibilidades;
+    struct prenda_t * prendas_a_lavar;
+    struct prenda_t * prendas_lavado_actual;
+
+    size_t cantidad_prendas;
+    size_t cantidad_incompatibilidades;
+};
+
 char * leer_linea(FILE * archivo){
 
     if(archivo == NULL)
@@ -174,23 +190,64 @@ char** split(const char* string, char separador){
     return vector_substrings;
 }
 
-int main(int argc, char *argv[]) {
+struct prenda_t * crear_prenda(int numero, int tiempo){
+
+    struct prenda_t * prenda;
+    prenda = malloc(sizeof(struct prenda_t));
+    if(prenda == NULL)
+        return NULL;
+
+    prenda -> numero = numero;
+    prenda -> tiempo = tiempo;
+    prenda -> lavado = 0;
+    prenda -> siguiente = NULL;
+
+}
+
+void insertar_prenda(struct prenda_t ** prendas, struct prenda_t * prenda){
+    if(prendas == NULL)
+        return;
+
+    if((*prendas) != NULL){
+    
+        while((*prendas) -> siguiente != NULL){
+            prendas = &((*prendas) -> siguiente);
+        }
+
+        (*prendas) -> siguiente = prenda;
+
+    }
+
+    else{
+        *prendas = prenda;
+    }
+    
+    return;
+}
+
+struct lavanderia_t * crear_lavanderia(){
 
     char separador = ' ';
     char * linea;
     char * ptr;
     char ** linea_separada;
 
+
+    struct lavanderia_t * lavanderia;
+    int ** matriz_incompatibilidades;
     size_t cantidad_prendas;
     size_t cantidad_incompatibilidades;
 
-    int ** matriz_incompatibilidades;
-    int * vector_lavados;
-    int cantidad_lavados = 0;
+    lavanderia = malloc(sizeof(struct lavanderia_t));
+    if(lavanderia == NULL)
+        return NULL;
+
+    lavanderia -> prendas_a_lavar = NULL;
+    lavanderia -> prendas_lavado_actual = NULL;
 
     FILE * archivo_entrada = fopen("datos.txt", "r");
     if(!archivo_entrada)
-        return 1;
+        return NULL;
 
     while((linea = leer_linea(archivo_entrada)) != NULL){
 
@@ -200,7 +257,7 @@ int main(int argc, char *argv[]) {
             if(linea_separada == NULL){
                 free(linea);
                 fclose(archivo_entrada);
-                return 1;
+                return NULL;
             }
 
             if(linea[0] == 'p'){
@@ -213,30 +270,21 @@ int main(int argc, char *argv[]) {
                     free(linea);
                     destruir_vector(linea_separada);
                     fclose(archivo_entrada);
-                    return 1;
+                    return NULL;
                 }
-                int * ptr2;
+                int ptr2 = 1;
                 for(int i = 0; i < cantidad_prendas; i++){
                     matriz_incompatibilidades[i] = calloc((cantidad_prendas), sizeof(int));
-                    if(ptr2 != NULL){
-                        ptr2 = matriz_incompatibilidades[i];
+                    if(matriz_incompatibilidades[i] == NULL){
+                        ptr2 = 0;
                     }
                 }
-                if(ptr2 == NULL){
+                if(ptr2 == 0){
                     free(linea);
                     destruir_vector(linea_separada);
                     fclose(archivo_entrada);
                     destruir_matriz(matriz_incompatibilidades, cantidad_prendas);
-                    return 1;
-                }
-
-                vector_lavados = malloc(sizeof(int) * cantidad_prendas);
-                if(vector_lavados == NULL){
-                    free(linea);
-                    destruir_vector(linea_separada);
-                    fclose(archivo_entrada);
-                    destruir_matriz(matriz_incompatibilidades, cantidad_prendas);
-                    return 1;
+                    return NULL;
                 }
 
             }
@@ -255,7 +303,8 @@ int main(int argc, char *argv[]) {
                 int prenda = strtol(linea_separada[1], &ptr, 10);
                 int tiempo = strtol(linea_separada[2], &ptr, 10);
 
-                matriz_incompatibilidades[prenda-1][prenda-1] = tiempo;
+                struct prenda_t * prenda2 = crear_prenda(prenda, tiempo);
+                insertar_prenda(&(lavanderia -> prendas_a_lavar), prenda2);
 
             }
 
@@ -266,49 +315,151 @@ int main(int argc, char *argv[]) {
         free(linea);
     }
 
-    int prenda_mayor = 0;
-    int tiempo_mayor = -1;
+    fclose(archivo_entrada);
+    lavanderia -> matriz_incompatibilidades = matriz_incompatibilidades;
+    lavanderia -> cantidad_prendas = cantidad_prendas;
+    lavanderia -> cantidad_incompatibilidades = cantidad_incompatibilidades;
 
-    while(tiempo_mayor != 0){
-        for(int i = 0; i < cantidad_prendas; i++){
-            if(matriz_incompatibilidades[i][i] > tiempo_mayor){
-                prenda_mayor=i+1;
-                tiempo_mayor =  matriz_incompatibilidades[i][i];
-            }
+    return lavanderia;
+}
+
+void destruir_lavanderia(struct lavanderia_t * lavanderia){
+
+    destruir_matriz(lavanderia -> matriz_incompatibilidades, lavanderia -> cantidad_prendas);
+    struct prenda_t * aux = lavanderia -> prendas_lavado_actual;
+    struct prenda_t * aux2;
+    for(int i = 0; i < lavanderia -> cantidad_prendas; i++){
+        aux2 = aux -> siguiente;
+        free(aux);
+        aux = aux2;
+    }
+
+    free(lavanderia);
+}
+
+struct prenda_t * prenda_mayor_tiempo(struct prenda_t * prendas){
+    if(prendas == NULL)
+        return NULL;
+
+    struct prenda_t * prenda_mayor = prendas;
+
+    while(prendas -> siguiente != NULL){
+        if(prendas -> siguiente -> tiempo > prenda_mayor -> tiempo)
+            prenda_mayor = prendas -> siguiente;
+
+        prendas = prendas -> siguiente;
+        
+    }
+
+    return prenda_mayor;
+
+}
+
+struct prenda_t * remover_prenda(struct prenda_t ** prendas, int numero){
+    if(prendas == NULL)
+        return NULL;
+
+    if((*prendas) == NULL)
+        return NULL;
+
+    struct prenda_t * aux;
+
+    if((*prendas) -> numero == numero){
+        aux = (*prendas);
+        (*prendas) = aux -> siguiente;
+        aux -> siguiente = NULL;
+        return(aux);
+    }
+
+    while((*prendas) -> siguiente != NULL){
+        if((*prendas) -> siguiente -> numero == numero){
+            aux = (*prendas) -> siguiente;
+            (*prendas) -> siguiente = aux -> siguiente;
+            aux -> siguiente = NULL;
+            return aux;
+        }
+        prendas = &((*prendas) -> siguiente);
+    }
+
+
+    return NULL;
+}
+
+bool chequear_incompatibilidad(struct lavanderia_t * lavanderia, int cantidad_lavados, struct prenda_t * prenda){
+
+    struct prenda_t * aux = lavanderia -> prendas_lavado_actual;
+
+    while(aux != NULL){
+        if(aux -> lavado == cantidad_lavados){
+            if(lavanderia -> matriz_incompatibilidades[prenda->numero-1][aux->numero-1] == 1)
+                return true;
         }
 
-        for(int i = 0; i < cantidad_prendas; i++){
-            if(i != (prenda_mayor-1)){
-                if(matriz_incompatibilidades[i][prenda_mayor-1] == 0 && matriz_incompatibilidades[i][i] != 0){
-                    vector_lavados[i] = (cantidad_lavados+1);
-                    matriz_incompatibilidades[i][i] = 0;
-                }
-            }
+        aux = aux -> siguiente;
+    }
 
-            else if(matriz_incompatibilidades[i][i] != 0){
-                vector_lavados[i] = (cantidad_lavados+1);
-                matriz_incompatibilidades[i][i] = 0;
-                tiempo_mayor = -1;
-            }
+    return false;
+}
+
+void imprimir_lavados(struct lavanderia_t * lavanderia){
+    if(lavanderia == NULL)
+        return;
+
+    struct prenda_t * prenda = lavanderia -> prendas_lavado_actual;
+
+    while(prenda != NULL){
+        printf("%lu %lu\n", prenda -> numero, prenda -> lavado);
+        prenda = prenda -> siguiente;
+    }
+
+    return;
+
+}
+
+int main(int argc, char *argv[]) {
+
+    int cantidad_lavados = 1;
+    struct lavanderia_t * lavanderia;
+
+    lavanderia = crear_lavanderia();
+
+    struct prenda_t * prenda;
+
+    while(lavanderia -> prendas_a_lavar != NULL){
+
+        prenda = prenda_mayor_tiempo(lavanderia -> prendas_a_lavar);
+        remover_prenda(&(lavanderia -> prendas_a_lavar), prenda -> numero);
+        insertar_prenda(&(lavanderia -> prendas_lavado_actual), prenda);
+        prenda -> lavado = cantidad_lavados;
+
+        while(lavanderia -> prendas_a_lavar != NULL){
+
+            struct prenda_t * prenda2 = prenda_mayor_tiempo(lavanderia -> prendas_a_lavar);
+            remover_prenda(&(lavanderia -> prendas_a_lavar), prenda2 -> numero);
+            bool incompatible = chequear_incompatibilidad(lavanderia, cantidad_lavados, prenda2);
+            if(incompatible == false)
+                prenda2 -> lavado = cantidad_lavados;
+            insertar_prenda(&(lavanderia -> prendas_lavado_actual), prenda2);
+
+        }
+
+        for(int i = 0; i < lavanderia -> cantidad_prendas; i++){
+                struct prenda_t * prenda3 = remover_prenda(&(lavanderia -> prendas_lavado_actual), i+1); 
+                if(prenda3 -> lavado == 0)        
+                    insertar_prenda(&(lavanderia -> prendas_a_lavar), prenda3);
+                else
+                    insertar_prenda(&(lavanderia -> prendas_lavado_actual), prenda3);
+
         }
 
         cantidad_lavados++;
+
     }
 
-    for(int i = 0; i < 20; i++){
-        for(int j = 0; j < 20; j++){
-            printf("%d  ", matriz_incompatibilidades[i][j]);
-        }
-        printf("\n");
-    }
+    imprimir_lavados(lavanderia);
 
-    for(int i = 0; i < 20; i++){
-        printf("%d %d\n", (i+1), vector_lavados[i]);
-    }
+    destruir_lavanderia(lavanderia);
 
-
-    destruir_matriz(matriz_incompatibilidades, cantidad_prendas);
-    fclose(archivo_entrada);
     return 0;
 
 }
