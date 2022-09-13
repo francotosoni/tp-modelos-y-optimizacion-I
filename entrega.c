@@ -405,13 +405,18 @@ void imprimir_lavados(struct lavanderia_t * lavanderia){
     if(lavanderia == NULL)
         return;
 
+    FILE * archivo_salida = fopen("resultado.txt", "w");
+    if(!archivo_salida)
+        return;
+
     struct prenda_t * prenda = lavanderia -> prendas_lavado_actual;
 
     while(prenda != NULL){
-        printf("%lu %lu\n", prenda -> numero, prenda -> lavado);
+        fprintf(archivo_salida, "%lu %lu\n", prenda -> numero, prenda -> lavado);
         prenda = prenda -> siguiente;
     }
 
+    fclose(archivo_salida);
     return;
 
 }
