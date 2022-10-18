@@ -1,0 +1,23 @@
+T_i : Tiempo que tarda cada prenda i en lavarse
+Xi_j: Variable bivalente que vale 1 si la prenda i se lava en el lavado j
+MAX_j: El tiempo mas grande que tarda en lavar una prenda en el lavado j
+
+T_1 = 8, T_2 = 10, T_3 = 9, T_4 = 7, T_5 = 3, T_6 = 9, T_7 = 10, T_8 = 2, T_9 = 9, T_10 = 8, T_11 = 6,
+T_12 = 9, T_13 = 5, T_14 = 1, T_15 = 5, T_16 = 9, T_17 = 10, T_18 = 4, T_19 = 4, T_20 = 5 => Declaro las variables con el tiempo de cada prenda
+
+Sumatoria desde j = 1 a j = 20 de Xi_j = 1 para todo i => Realizo una sumatoria igualada a uno para asegurarme de que si o si se laven todas las prendas y que unicamente se laven una sola vez
+
+X1_j + X10_j <= 1, X1_j + X19_j <= 1, X1_j + X2_j <= 1, X1_j + X3_j <= 1, X1_j + X4_j <= 1, X1_j + X5_j <= 1,
+X1_j + X6_j <= 1, X1_j + X7_j <= 1, X1_j + X8_j <= 1, X1_j + X9_j <= 1, X1_j + X17_j <= 1 para todo j => Estas restricciones son para asegurarme de que se respeten las incompatibilidades ya que si la prenda 1 se lava en un lavado j, ninguna de las otras prendas se podra lavar en ese mismo lavado. Esto habria que hacerlo para todas las prendas con sus respectivas incompatibilidades
+
+T_1 - M (1- X1_1) =< MAX_1, T_2 - M (1- X2_1) =< MAX_1, T_3 - M (1- X3_1) =< MAX_1, T_4 - M (1- X4_1) =< MAX_1,
+T_5 - M (1- X5_1) =< MAX_1, T_6 - M (1- X6_1) =< MAX_1, T_7 - M (1- X7_1) =< MAX_1, T_8 - M (1- X8_1) =< MAX_1,
+T_9 - M (1- X9_1) =< MAX_1, T_10 - M (1- X10_1) =< MAX_1, T_11 - M (1- X11_1) =< MAX_1, T_12 - M (1- X12_1) =< MAX_1,
+T_13 - M (1- X13_1) =< MAX_1, T_14 - M (1- X14_1) =< MAX_1, T_15 - M (1- X15_1) =< MAX_1, T_16 - M (1- X16_1) =< MAX_1,
+T_17 - M (1- X17_1) =< MAX_1, T_18 - M (1- X18_1) =< MAX_1, T_19 - M (1- X19_1) =< MAX_1, T_20 - M (1- X20_1) =< MAX_1
+
+Estas restricciones son para obtener el mayor tiempo de una prenda en el lavado 1, siendo por ende, el tiempo que tarda el lavado 1. No necesita limitarse el valor maximo ya que como vamos a minimizar la funcion objetivo, si o si va a tomar el valor minimo. Si hay un lavado que no tiene ninguna prenda, la restricion va a quedar negativa y por ende MAX va a tomar el valor 0 ya que una variable no puede ser negativa. Habria que realizar estas mismas restricciones para todos los lavados j, cambiando los Xi_j y el MAX_j
+
+MIN Z = Sumatoria desde j = 1 hasta j = 20 de MAX_j => El tiempo total para lavar todas las prendas
+
+Me parece un problema normal para plantear teoricamente pero la dificultad es que tiene muchisimas restricciones y eso que en este caso simplemente son 20 prendas. No se si se puede optimizar mas la resolucion pero creo que la verdadera dificultad es llegar a un resultado, mas que plantearlo.
